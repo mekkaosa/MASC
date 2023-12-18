@@ -1,0 +1,193 @@
+---
+configurations:
+
+  full_protection:
+    default_rules:
+      files: [coremark.h, core_list_join.c, core_main.c, core_state.c, core_util.c, core_matrix.c, core_portme.c, core_portme.h]
+      protection:
+      - ipcfg
+      - ipdup
+      - cfg
+      - dup
+
+    special_rules:
+      coremark.h, core_list_join.c, core_main.c, core_state.c, core_util.c, core_matrix.c, core_portme.c, core_portme.h:
+        structure:
+          seed1, seed2, seed3, err, size, iterations, execs, crc, crclist, crcmatrix, crcstate, N, portable_id:
+            - memdup
+        global:
+          list_known_crc, matrix_know_crc, state_known_crc:
+            - memdup
+      core_list_join.c:
+        function:
+          cmp_idx, cmp_complex:
+          - icall
+          core_list_mergesort.cmp:
+          - icall
+          - ipcfg
+          - ipdup
+          core_list_mergesort:
+            - memdup*
+
+  core_protection:
+    special_rules:
+      coremark.h, core_list_join.c, core_main.c:
+        structure:
+          seed1, seed2, seed3, err, size, iterations, execs, crc, crclist, crcmatrix, crcstate:
+            - memdup
+      coremark.h:
+        function:
+          start_time, stoptime, core_start_parallel, core_stop_parallel, core_list_init, core_bench_list, core_init_matrix, core_bench_matrix:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup
+      coremark.h, core_matrix.c, core_main.c, core_util.c, core_list_join.c, core_state.c:
+        structure:
+          N:
+            - memdup
+      core_utils.c:
+        function:
+          get_seed_32, parseval, get_seed_args, core_bench_matrix:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup 
+        global:
+          seed1_volatile, seed2_volatile, seed3_volatile, seed4_volatile, seed5_volatile:
+            - memdup
+
+      coremark.h, core_util.c, core_main.c, core_matrix.c, core_list_join.c, core_state.c:
+        function:
+          crcu8, crc16, crcu32, crcu16, check_data_type:
+              - cfg
+              - ipcfg
+              - dup
+              - ipdup
+
+      core_state.c:
+        function:
+          core_bench_state, core_state_transition, core_init_state, ee_isdigit:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup
+
+      core_matrix.c:
+        function:
+          matrix_test, matrix_sum, matrix_mul_const, matrix_mul_vect, matrix_mul_matrix, matrix_mul_matrix_bitextract, matrix_add_const, core_bench_matrix, core_init_matrix:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup
+      
+      core_main.c:
+        global:
+          list_known_crc, matrix_know_crc, state_known_crc:
+            - memdup
+        function: 
+          iterate, core_init_state, core_bench_state, core_init_matrix, core_bench_list, core_list_init, core_init_state:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup
+
+      core_list_join.c:
+        function:
+          core_list_find, core_list_reverse, core_list_remove, core_list_undo_remove, core_list_insert_new, core_list_mergesort, calc_func, copy_info, cmp_complex, cmp_idx, core_bench_state, core_bench_matrix, core_bench_list, core_list_init:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup
+          cmp_idx, cmp_complex:
+            - icall
+          core_list_mergesort.cmp:
+              - icall
+              - ipcfg
+              - ipdup
+
+      core_portme.h:
+        structure:
+          portable_id:
+            - memdup
+        function:
+          portable_init, portable_fini:
+            - cfg
+            - ipcfg
+            - dup
+            - ipdup
+
+  techweek_none:
+    default_rules:
+      files: [core_list_join.c, core_state.c, core_matrix.c, core_util.c]
+      protection:
+      - ""
+
+  techweek_cfg:
+    default_rules:
+      files: [core_list_join.c, core_state.c, core_matrix.c, core_util.c]
+      protection:
+      - cfg
+
+  techweek_ipcfg:
+    default_rules:
+      files: [core_list_join.c, core_state.c, core_matrix.c]
+      protection:
+      - cfg
+      - ipcfg
+      
+    special_rules:
+      core_list_join.c:
+        function:
+          cmp_idx, cmp_complex:
+            - icall
+          core_list_mergesort.cmp:
+            - icall
+            - ipcfg
+      core_util.c:
+        crc16, crcu16, crcu32:
+          - cfg
+          - ipcfg
+      coremark.h, core_main.c:
+        function:
+          core_list_init, core_bench_list, core_init_state, core_bench_state, core_init_matrix, core_bench_matrix, crc16, crcu16, crcu32:
+            - ipcfg
+
+  techweek_all:
+    default_rules:
+      files: [core_list_join.c, core_state.c, core_matrix.c]
+      protection:
+      - cfg
+      - ipcfg
+      - dup
+      - ipdup
+
+    special_rules:
+      core_list_join.c:
+        function:
+          cmp_idx, cmp_complex:
+            - icall
+          core_list_mergesort.cmp:
+            - icall
+            - ipcfg
+            - ipdup
+      core_util.c:
+        crc16, crcu16, crcu32:
+          - cfg
+          - ipcfg
+          - dup
+          - ipdup
+      coremark.h, core_main.c:
+        function:
+          core_list_init, core_bench_list, core_init_state, core_bench_state, core_init_matrix, core_bench_matrix, crc16, crcu16, crcu32:
+            - ipcfg
+            - ipdup
+
+  no_protection:
+    files:
+    - aucun
+    protection:
+    - ""
+
+default_configuration: no_protection
+...

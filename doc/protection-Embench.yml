@@ -1,0 +1,223 @@
+---
+configurations:
+  nettle-aes:
+    default_rules:
+      files: [beebsc.c, beebsc.h, board.c, chip.c, config.h, main.c, support.h, nettle-aes.c, Perfs_RISCV.c, Perfs.h, Verbose.h, boardsupport.c, boardsupport.h, clk.h]
+      protection:
+      - ipcfg
+      - ipdup
+      - cfg
+      - dup
+
+    special_rules:
+      nettle-aes.c:
+        global:
+          plaintext, expected, key: # , mtable: #encrypted, decrypted- ## left unprotected because do not compile/ execute
+          - memdup
+        structure:
+          rounds, keys, sbox, table:
+            - memdup
+      beebsc.c:
+        global:
+          seed, heap_ptr, heap_end, heap_requested:
+          - memdup
+
+  techweek-nettle-aes_ipcfg:
+    default_rules:
+      files: [nettle-aes.c]
+      protection:
+      - cfg
+      - ipcfg
+    special_rules:
+      nettle-aes.c:
+        function:
+          warm_caches:
+          - no-cfg
+          - no-ipcfg
+          initialise_benchmark:
+          - no-cfg
+          - no-ipcfg
+          benchmark:
+          - no-cfg
+          - no-ipcfg
+          verify_benchmark:
+          - no-cfg
+          - no-ipcfg
+      
+  techweek-nettle-aes_all:
+    default_rules:
+      files: [nettle-aes.c]
+      protection:
+      - cfg
+      - ipcfg
+      - dup
+      - ipdup
+    special_rules:
+      nettle-aes.c:
+        function:
+          warm_caches:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+          initialise_benchmark:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+          benchmark:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+          verify_benchmark:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+      
+  techweek-nettle-aes_none:
+    default_rules:
+      files: [nettle-aes.c]
+      protection:
+      - ""
+
+  nettle-sha256:
+    default_rules:
+      files: [beebsc.c, beebsc.h, board.c, chip.c, config.h, main.c, support.h, nettle-sha256.c, Perfs_RISCV.c, Perfs.h, Verbose.h, boardsupport.c, boardsupport.h, clk.h]
+      protection:
+      - ipcfg
+      - ipdup
+      - cfg
+      - dup
+
+    special_rules:
+      nettle-sha256.c:
+        function:
+          sha256_init, sha256_digest, sha256_update:
+          - icall
+        global:
+#          K, msg, hash:
+          msg, hash:
+          - memdup
+        structure:
+          state, count, block, index: # name, context_size, digest_size, block_size ## left unprotected because do not compile/ execute
+            - memdup
+      beebsc.c:
+        global:
+          seed, heap_ptr, heap_end, heap_requested:
+          - memdup
+
+  techweek-nettle-sha256_ipcfg:
+    default_rules:
+      files: [nettle-sha256.c]
+      protection:
+      - cfg
+      - ipcfg
+
+    special_rules:
+      nettle-sha256.c:
+        function:
+          sha256_init, sha256_digest, sha256_update:
+          - icall
+          warm_caches:
+          - no-cfg
+          - no-ipcfg
+          initialise_benchmark:
+          - no-cfg
+          - no-ipcfg
+          benchmark:
+          - no-cfg
+          - no-ipcfg
+          verify_benchmark:
+          - no-cfg
+          - no-ipcfg
+
+  techweek-nettle-sha256_all:
+    default_rules:
+      files: [nettle-sha256.c]
+      protection:
+      - cfg
+      - ipcfg
+      - dup
+      - ipdup
+
+    special_rules:
+      nettle-sha256.c:
+        function:
+          sha256_init, sha256_digest, sha256_update:
+          - icall
+          warm_caches:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+          initialise_benchmark:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+          benchmark:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+          verify_benchmark:
+          - no-cfg
+          - no-ipcfg
+          - no-dup
+          - no-ipdup
+
+  techweek-nettle-sha256_none:
+    default_rules:
+      files: [nettle-sha256.c]
+      protection:
+      - ""
+
+  crc32:
+    default_rules:
+      files: [beebsc.c, beebsc.h, board.c, chip.c, config.h, main.c, support.h, crc_32.c, Perfs_RISCV.c, Perfs.h, Verbose.h, boardsupport.c, boardsupport.h, clk.h]
+      protection:
+      - ipcfg
+      - ipdup
+      - cfg
+      - dup
+
+    special_rules:
+      crc_32.c.c:
+        global:
+          crc_32_tab:
+          - memdup
+
+  techweek-crc32_ipcfg:
+    special_rules:
+      crc_32.c:
+        function:
+          benchmark_body, crc32pseudo:
+          - cfg
+          - ipcfg
+      beebsc.c:
+        function:
+          srand_beeps:
+          - cfg
+          - ipcfg
+
+  techweek-crc32_none:
+    special_rules:
+      crc_32.c:
+        function:
+          benchmark_body, crc32pseudo:
+          - ""
+      beebsc.c:
+        function:
+          srand_beeps:
+          - ""
+
+  no_protection:
+    files:
+    - aucun
+    "":
+    - dup
+
+default_configuration: no_protection
+...
