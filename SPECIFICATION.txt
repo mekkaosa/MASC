@@ -1,0 +1,15 @@
+Spécification des classes C++ qui contiendront les informations analysées dans le fichier YAML :
+
+La classe TypeName :
+
+La classe Lecture : 
+
+La classe Creation : 
+
+La classe Separation :
+
+La classe Exception :
+
+La classe Ecriture :
+
+La classe Check : 
