@@ -1,15 +1,7 @@
-Spécification des classes C++ qui contiendront les informations analysées dans le fichier YAML :
+La spécification des classe objets:
 
-La classe TypeName :
-
-La classe Lecture : 
-
-La classe Creation : 
-
-La classe Separation :
-
-La classe Exception :
-
-La classe Ecriture :
-
-La classe Check : 
+Function : représente une fonction avec les protections associées.
+Parameter : représente un paramètre de fonction avec les protections associées.
+Global : représente une variable globale avec les protections associées.
+Structure : représente une structure avec les protections associées.
+BlackList : représente une liste noire de fichiers avec les protections associées.
