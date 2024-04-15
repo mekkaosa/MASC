@@ -1,4 +1,4 @@
-// #include <yaml-cpp/yaml.h>
+//#include <yaml-cpp/yaml.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -10,6 +10,16 @@
 
 #include "parse_yaml.h"
 
+////////////////////////////////////////////////////////////////////////////////
+// This part of the code is related to the reading of the configuration file  //
+// and the options pass as arguments                                          //
+////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////
+// This part of the code is related to the conversion of the dictionnary to   //
+// standarized objects implemented in object_yaml.py                          //
+////////////////////////////////////////////////////////////////////////////////
 
 // Déclarations des fonctions
 std::vector<Option> createOptionsObject(std::map<std::string, std::string> options);
@@ -21,8 +31,7 @@ std::vector<TypeDef> createTypeDefObject(std::map<std::string, std::map<std::str
 std::vector<Global> createGlobalObject(std::map<std::string, std::map<std::string, std::vector<std::string>>> special_rules_file, std::string file_name);
 std::vector<Structure> createStructureObject(std::map<std::string, std::map<std::string, std::vector<std::string>>> special_rules_file, std::string file_name);
 
-// Définitions des fonctions
-
+// Définition des fonctions
 std::vector<Option> createOptionsObject(std::map<std::string, std::string> options) {
     std::vector<Option> list_options;
     if (!options.empty()) {
@@ -137,6 +146,34 @@ std::vector<Structure> createStructureObject(std::map<std::string, std::map<std:
     }
     return list_structures;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Standardized object can reference to multiple files, types or protections  //
+// This part is used to make each object reference to only one entity         //
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// In the .yml file, exceptions are written the same way as affirmations. This//
+// part of the code aims to convert the exception to affirmation according to //
+// the protection specified in the default rules:                             //
+// (file_name, function_name, no-protection1) ->                              //
+// (file_name, function_name, protection2, protection3)                       //
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// This part of the code is used to write the object into the output          //
+// configuration file                                                         //
+////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////
+// This part of the code are tools function                                   //
+////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////
+//                                   Main                                     //
+////////////////////////////////////////////////////////////////////////////////
 
 
 
