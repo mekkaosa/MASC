@@ -1,4 +1,5 @@
-#include <yaml-cpp/yaml.h>
+//#include <yaml-cpp/yaml.h>
+#include<llvm/Support/YAMLTraits.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,6 +10,7 @@
 
 
 #include "parse_yaml.h"
+using llvm:: yaml ;
 
 ////////////////////////////////////////////////////////////////////////////////
 // This part of the code is related to the reading of the configuration file  //
@@ -169,28 +171,27 @@ std::vector<Structure> createStructureObject(std::map<std::string, std::map<std:
 ////////////////////////////////////////////////////////////////////////////////
 // This part of the code are tools function                                   //
 ////////////////////////////////////////////////////////////////////////////////
-amespace fs = std::filesystem;
-// Supposons que cette fonction compare deux fichiers YAML et imprime les différences
-void differences_with(const std::string& file1Path, const std::string& file2Path) {
-    YAML::Node file1 = YAML::LoadFile(file1Path);
-    YAML::Node file2 = YAML::LoadFile(file2Path);
 
-    // Cette fonction est très basique et doit être étendue pour une comparaison complète
-    for (YAML::const_iterator it = file1.begin(); it != file1.end(); ++it) {
-        std::string key = it->first.as<std::string>();
-        if (file2[key]) {
-            if (file1[key] != file2[key]) {
+void differences_with(const std::string& file1Path, const std::string& file2Path) {
+    try {
+        YAML::Node file1 = YAML::LoadFile(file1Path);
+        YAML::Node file2 = YAML::LoadFile(file2Path);
+
+        for (auto it = file1.begin(); it != file1.end(); ++it) {
+            std::string key = it->first.as<std::string>();
+            if (file2[key] && file1[key] != file2[key]) {
                 std::cout << "Difference found in key: " << key << "\n";
                 std::cout << "File 1: " << file1[key] << "\n";
                 std::cout << "File 2: " << file2[key] << "\n";
+            } else if (!file2[key]) {
+                std::cout << "Key " << key << " not found in file 2\n";
             }
-        } else {
-            std::cout << "Key " << key << " not found in file 2\n";
         }
+    } catch (const std::exception& e) {
+        std::cerr << "Error processing files: " << e.what() << std::endl;
     }
-
-    // Similaire pour les clés uniquement dans file2, etc.
 }
+
 
 //configuration_dict est un dictionnaire qui associe des clés de type TypeDef à des valeurs de type TypeDef
 std::vector<TypeDef> check_null(std::vector<TypeDefe, TypeDef>& list_of_type_name) {
@@ -221,7 +222,7 @@ std::vector<TypeDef> check_null(std::vector<TypeDefe, TypeDef>& list_of_type_nam
     }
     // removes them if they have the same name and file as another TypeDef object with a non-null protection field.
     return list_of_type_name;
-}
+} 
 // Ici la traduction du python en C++ message warning 
 void print_warning(const std::string& msg) {
     std::cout << "ATTENTION : " << msg << std::endl;
