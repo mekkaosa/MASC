@@ -1,5 +1,5 @@
-//#include <yaml-cpp/yaml.h>
-#include<llvm/Support/YAMLTraits.h>
+#include <yaml-cpp/yaml.h> 
+//#include<llvm/Support/YAMLTraits.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -10,8 +10,6 @@
 
 
 #include "parse_yaml.h"
-using llvm:: yaml ;
-
 ////////////////////////////////////////////////////////////////////////////////
 // This part of the code is related to the reading of the configuration file  //
 // and the options pass as arguments                                          //
@@ -94,7 +92,7 @@ std::vector<std::string> create_special_rules_object(std::map<std::string, std::
         } else if (type_name == "TypeDef") {
             std::vector<TypeDef> typedefs = createTypeDefObject(special_rules, file);
             for (const auto& typedef_ : typedefs) {
-                list_protection.push_back(typedef_.typedefName);
+                list_protection.push_back(typedef_.name);
             }
         }
     }
@@ -124,6 +122,20 @@ std::vector<TypeDef> createTypeDefObject(std::map<std::string, std::map<std::str
     }
     return list_typedefs;
 }
+std::vector<TypeDef> createTypeDefs(const std::map<std::string, std::map<std::string, std::vector<std::string>>> &special_rules_file, const std::string &file_name) {
+    std::vector<TypeDef> list_typedefs;
+    auto file_rules = special_rules_file.find(file_name);
+    if (file_rules != special_rules_file.end()) {
+        auto globals = file_rules->second.find("Global");
+        if (globals != file_rules->second.end()) {
+            for (const auto &global : globals->second) {
+                list_typedefs.push_back(TypeDef(file_name, global, {}));
+            }
+        }
+    }
+    return list_typedefs;
+}
+
 
 std::vector<Global> createGlobalObject(std::map<std::string, std::map<std::string, std::vector<std::string>>> special_rules_file, std::string file_name) {
     std::vector<Global> list_globals;
@@ -171,6 +183,17 @@ std::vector<Structure> createStructureObject(std::map<std::string, std::map<std:
 ////////////////////////////////////////////////////////////////////////////////
 // This part of the code are tools function                                   //
 ////////////////////////////////////////////////////////////////////////////////
+const std::string DEFAULT_RULES = "DefaultRules";
+const std::string SPECIAL_RULES = "SpecialRules";
+
+std::string nodeToString(const YAML::Node& node) {
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
+void print_warning(const std::string& msg) {
+    std::cout << "ATTENTION : " << msg << std::endl;
+}
 
 void differences_with(const std::string& file1Path, const std::string& file2Path) {
     try {
@@ -179,7 +202,7 @@ void differences_with(const std::string& file1Path, const std::string& file2Path
 
         for (auto it = file1.begin(); it != file1.end(); ++it) {
             std::string key = it->first.as<std::string>();
-            if (file2[key] && file1[key] != file2[key]) {
+            if (file2[key] && nodeToString(file1[key]) != nodeToString(file2[key]))  {
                 std::cout << "Difference found in key: " << key << "\n";
                 std::cout << "File 1: " << file1[key] << "\n";
                 std::cout << "File 2: " << file2[key] << "\n";
@@ -192,15 +215,14 @@ void differences_with(const std::string& file1Path, const std::string& file2Path
     }
 }
 
-
 //configuration_dict est un dictionnaire qui associe des clés de type TypeDef à des valeurs de type TypeDef
-std::vector<TypeDef> check_null(std::vector<TypeDefe, TypeDef>& list_of_type_name) {
+std::vector<TypeDef> check_null(std::vector<TypeDef>& list_of_type_name)  {
     std::vector<std::pair<TypeDef, int>> null_protection_objects;
     std::vector<int> tab;
     int i = 0;
     // là on itere dans les type mane de list of type name et verifie si la protection est null et ajoute le TypeDef et son indice au tableau null_protection
     for (auto& obj : list_of_type_name) {
-        if (obj.protection == NULL) {
+       if (obj.protection.empty()) {
             null_protection_objects.push_back(std::make_pair(obj, i));
         }
         i++;
@@ -223,10 +245,7 @@ std::vector<TypeDef> check_null(std::vector<TypeDefe, TypeDef>& list_of_type_nam
     // removes them if they have the same name and file as another TypeDef object with a non-null protection field.
     return list_of_type_name;
 } 
-// Ici la traduction du python en C++ message warning 
-void print_warning(const std::string& msg) {
-    std::cout << "ATTENTION : " << msg << std::endl;
-}
+
 // un check pour s'assurer de la coherence de declaration  d'objet .
 void check_coherence(const std::vector<TypeDef>& list_of_type_name) {
 
@@ -240,16 +259,17 @@ void check_coherence(const std::vector<TypeDef>& list_of_type_name) {
         }
     }
 }
-std::vector<TypeDef> check_default_special(const std:: map<TypeDef,TypeDef>&configuration_dict){
-    std::vector<bool> defined;
-    defined ={true,true};
+// Ici la traduction du python en C++ message warning 
+// retour dun booleen 
+ std::vector<bool> check_default_special(const std::map<TypeDef, TypeDef>& configuration_dict) {
+    std::vector<bool> defined = {true, true};
     for (auto& obj: configuration_dict) {
         //Dans cet exemple, la fonction find du dictionnaire configuration_dict est utilisée pour rechercher la clé DEFAULT_RULES. Si la clé n'est pas trouvée, la fonction find retourne un itérateur pointant vers end(), qui est la fin du dictionnaire.
-        if (configuration_dict.find(DEFAULT_RULES) == configuration_dict.end()){
+        if (configuration_dict.find(TypeDef(DEFAULT_RULES)) == configuration_dict.end()){
             std::cout<<"No default_rules in this configuration"<<std::endl;
             defined[0]=false;
         }
-        if(configuration_dict.find(SPECIAL_RULES) == configuration_dict.end()){
+        if(configuration_dict.find(TypeDef(SPECIAL_RULES)) == configuration_dict.end()){
             std::cout<<"No special_rules in this configuration"<<std::endl;
             defined[1]=false;
         }
@@ -258,9 +278,11 @@ std::vector<TypeDef> check_default_special(const std:: map<TypeDef,TypeDef>&conf
     return defined ;
    
 }
+
 void print_error(const std::string& message) {
     std::cerr << "Error: " << message << std::endl;
 }
+/*
 Yaml::Node check_is_none(Yaml::Node element,  const std::string &attr){
     if(!element ){
         if(attr==NULL){
@@ -316,7 +338,7 @@ std::vector<std:: string > split_coma(std::vector<std:: string > list){
     return list;
 
 }
-
+ */
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                   Main                                     //
