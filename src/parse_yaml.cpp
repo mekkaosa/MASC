@@ -1,18 +1,23 @@
-#include <yaml-cpp/yaml.h> 
-//#include<llvm/Support/YAMLTraits.h>
+//#include <yaml-cpp/yaml.h> 
+#include "llvm/Support/YAMLTraits.h"
+#include "llvm/Support/YAMLParser.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <map>
 #include <vector>
 #include <algorithm>
 #include <cassert>
-
-
 #include "parse_yaml.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/SourceMgr.h"
+#include <iostream>
+
+using namespace llvm;
 ////////////////////////////////////////////////////////////////////////////////
 // This part of the code is related to the reading of the configuration file  //
-// and the options pass as arguments                                          //
+// and the options pass as arguments                                          //    
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -186,27 +191,35 @@ std::vector<Structure> createStructureObject(std::map<std::string, std::map<std:
 const std::string DEFAULT_RULES = "DefaultRules";
 const std::string SPECIAL_RULES = "SpecialRules";
 
-std::string nodeToString(const YAML::Node& node) {
-    std::stringstream ss;
-    ss << node;
+// Ajout de la déclaration manquante de TypeDef
+/*
+ std::string nodeToString(const llvm::yaml::Input& node) {
+    std::ostringstream ss;
+    node >> ss;
     return ss.str();
 }
-void print_warning(const std::string& msg) {
-    std::cout << "ATTENTION : " << msg << std::endl;
-}
+
+
 
 void differences_with(const std::string& file1Path, const std::string& file2Path) {
     try {
-        YAML::Node file1 = YAML::LoadFile(file1Path);
-        YAML::Node file2 = YAML::LoadFile(file2Path);
+        llvm::yaml::Input file1(file1Path);
+        llvm::yaml::Input file2(file2Path);
 
-        for (auto it = file1.begin(); it != file1.end(); ++it) {
-            std::string key = it->first.as<std::string>();
-            if (file2[key] && nodeToString(file1[key]) != nodeToString(file2[key]))  {
+        llvm::yaml::Input document1;
+        llvm::yaml::Input document2;
+
+        file1 >> document1;
+        file2 >> document2;
+
+        for (const auto &keyValuePair : document1.map()) {
+            std::string key = keyValuePair.getKey().str();
+            auto it = document2.map().find(llvm::StringRef(key));
+            if (it != document2.map().end() && it->getValue() != keyValuePair.getValue()) {
                 std::cout << "Difference found in key: " << key << "\n";
-                std::cout << "File 1: " << file1[key] << "\n";
-                std::cout << "File 2: " << file2[key] << "\n";
-            } else if (!file2[key]) {
+                std::cout << "File 1: " << nodeToString(keyValuePair.getValue()) << "\n";
+                std::cout << "File 2: " << nodeToString(it->getValue()) << "\n";
+            } else if (it == document2.map().end()) {
                 std::cout << "Key " << key << " not found in file 2\n";
             }
         }
@@ -215,19 +228,17 @@ void differences_with(const std::string& file1Path, const std::string& file2Path
     }
 }
 
-//configuration_dict est un dictionnaire qui associe des clés de type TypeDef à des valeurs de type TypeDef
-std::vector<TypeDef> check_null(std::vector<TypeDef>& list_of_type_name)  {
+std::vector<TypeDef> check_null(std::vector<TypeDef>& list_of_type_name) {
     std::vector<std::pair<TypeDef, int>> null_protection_objects;
     std::vector<int> tab;
     int i = 0;
-    // là on itere dans les type mane de list of type name et verifie si la protection est null et ajoute le TypeDef et son indice au tableau null_protection
     for (auto& obj : list_of_type_name) {
        if (obj.protection.empty()) {
             null_protection_objects.push_back(std::make_pair(obj, i));
         }
         i++;
     }
-    // une autre iteration mais cette fois pour verifier sil s'agit du meme fichier , mm nom mais dune protection different ; on ajoute l'indice au deuxieme tableau : tab
+
     for (auto& obj : list_of_type_name) {
         for (auto& null_obj : null_protection_objects) {
             std::vector<bool> differences = obj.differences_with(null_obj.first);
@@ -236,19 +247,17 @@ std::vector<TypeDef> check_null(std::vector<TypeDef>& list_of_type_name)  {
             }
         }
     }
-    // trier tab 
+
     std::sort(tab.begin(), tab.end());
-    //supprimer du list of type name les elements type name dindice dans tab 
+
     for (int i = tab.size() - 1; i >= 0; i--) {
         list_of_type_name.erase(list_of_type_name.begin() + tab[i]);
     }
-    // removes them if they have the same name and file as another TypeDef object with a non-null protection field.
+
     return list_of_type_name;
-} 
-
-// un check pour s'assurer de la coherence de declaration  d'objet .
+}  */
+/* 
 void check_coherence(const std::vector<TypeDef>& list_of_type_name) {
-
     for (const auto& obj : list_of_type_name) {
         for (const auto& obj_cmp : list_of_type_name) {
             auto differences = obj.differences_with(obj_cmp);
@@ -258,9 +267,13 @@ void check_coherence(const std::vector<TypeDef>& list_of_type_name) {
             }
         }
     }
-}
+} */
 // Ici la traduction du python en C++ message warning 
 // retour dun booleen 
+void print_warning(const std::string& msg) {
+    std::cout << "ATTENTION : " << msg << std::endl;
+}
+//compile 
  std::vector<bool> check_default_special(const std::map<TypeDef, TypeDef>& configuration_dict) {
     std::vector<bool> defined = {true, true};
     for (auto& obj: configuration_dict) {
@@ -279,10 +292,11 @@ void check_coherence(const std::vector<TypeDef>& list_of_type_name) {
    
 }
 
+
 void print_error(const std::string& message) {
     std::cerr << "Error: " << message << std::endl;
 }
-/*
+/* the old functions that doesnt work ! 
 Yaml::Node check_is_none(Yaml::Node element,  const std::string &attr){
     if(!element ){
         if(attr==NULL){
@@ -290,9 +304,35 @@ Yaml::Node check_is_none(Yaml::Node element,  const std::string &attr){
         }
     }else{
         return  element;
+     }
+}
+the new functions thats works due to the new installations 
+*/ 
+//compile 
+void check_is_none(llvm::yaml::Node *node, const std::string &attr) {
+    if (!node) {
+        print_error("YAML node is null.");
+        return;
+    }
+
+    // Example of checking an attribute or something related
+    if (attr.empty()) {
+        print_error("YAML attribute is empty.");
+        return;
+    }
+
+    // Demonstration of handling node based on type
+    if (auto *SN = dyn_cast<yaml::ScalarNode>(node)) {
+        SmallVector<char, 128> Storage;
+        StringRef value = SN->getValue(Storage);
+        std::cout << "Node value: " << value.str() << std::endl;
+    } else {
+        print_error("Node is not a scalar node.");
     }
 }
-std::vector<TypeDef> check_protection(std::vector<TypeDef> & list ,  const std:: string  & type){
+
+
+/*std::vector<TypeDef> check_protection(std::vector<TypeDef> & list ,  const std:: string  & type){
     // liste de retour 
     std::vector<TypeDef> lreturn ;
     int k =0;
@@ -301,7 +341,7 @@ std::vector<TypeDef> check_protection(std::vector<TypeDef> & list ,  const std::
         // verfie si l'element de la liste a une protection 
         // il cherchera ce attribut dans la liste des protection_key_whitelist
         if(type=="PROTECTION" && i!= "NULL" && i!= "NO-PROTECTION" && std::find(protection_key_whitelist.begin(), protection_key_whitelist.end(), i) == protection_key_whitelist.end()) {
-            print_warning( " not an accepted protection in the default_rules")
+            print_warning( " not an accepted protection in the default_rules");
             lreturn.push_back(k);
         }
         k++;
@@ -311,12 +351,32 @@ std::vector<TypeDef> check_protection(std::vector<TypeDef> & list ,  const std::
     }
     // le message d'erreur ds le cas ou tout les attribut de type protection sont ds le whitelist 
     if(list.size()==0){
-        print_error(" do not contain any accepted attribute")
+        print_error(" do not contain any accepted attribute");
     }
     return list ; 
 
+}*/
+//compile 
+std::vector<TypeDef> check_protection(std::vector<TypeDef> &list, const std::string &type, const std::vector<std::string> &protection_key_whitelist) {
+    // liste de retour 
+    std::vector<TypeDef> lreturn;
+    for (auto& item : list) {
+        // verfie si l'element de la liste a une protection 
+        // il cherchera ce attribut dans la liste des protection_key_whitelist
+        if (type == "PROTECTION" && item.protectionType != "NULL" && item.protectionType != "NO-PROTECTION" &&
+            std::find(protection_key_whitelist.begin(), protection_key_whitelist.end(), item.protectionType) == protection_key_whitelist.end()) {
+            print_warning("Not an accepted protection in the default rules");
+            lreturn.push_back(item);
+        }
+    }
+    // le message d'erreur ds le cas ou tout les attribut de type protection sont ds le whitelist
+    if (lreturn.empty()) {
+        print_error("Do not contain any accepted attribute");
+    }
+    return lreturn;
 }
-std::vector<std:: string > split_coma(std::vector<std:: string > list){
+
+/* std::vector<std:: string > split_coma(std::vector<std:: string > list){
     // le tableaux pour stocker les indices des ","
     std::vector < std:: string > to_pop ;
     int k=0;
@@ -337,8 +397,63 @@ std::vector<std:: string > split_coma(std::vector<std:: string > list){
 
     return list;
 
+} */
+// Helper function to split a string by a delimiter and return a vector of strings
+std::vector<std::string> split(const std::string &s, char delimiter) {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);  // Converts to std::string implicitly if token is already std::string
+    }
+    return tokens;
 }
- */
+std::vector<std::string> split_coma(std::vector<std::string> list) {
+    std::vector<int> to_pop;
+    int k = 0;
+    for (auto& file : list) {
+        if (file.find(',') != std::string::npos) {
+            to_pop.push_back(k);
+            auto splits = split(file, ',');
+            for (auto& f : splits) {
+                list.push_back(f);
+            }
+        }
+        k++;
+    }
+
+    // Remove elements in reverse to avoid invalidating indices
+    for (auto it = to_pop.rbegin(); it != to_pop.rend(); ++it) {
+        list.erase(list.begin() + *it);
+    }
+
+    return list;
+}
+/* std::vector<std::string> split_coma(std::vector<std::string> list) {
+    std::vector<int> to_pop;
+    int k = 0;
+    for (auto& file : list) {
+        if (file.find(',') != std::string::npos) {
+            // Record index of the element to remove later
+            to_pop.push_back(k);
+            // Split and add new elements
+            auto splits = split(file, ',');
+            for (auto& f : splits) {
+                list.push_back(f);
+            }
+        }
+        k++;
+    }
+
+    // Remove original elements containing commas, in reverse order to avoid shifting indices
+    for (auto it = to_pop.rbegin(); it != to_pop.rend(); ++it) {
+        list.erase(list.begin() + *it);
+    }
+
+    return list;
+} */
+
+ 
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                   Main                                     //
